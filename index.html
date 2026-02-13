@@ -19,9 +19,53 @@
     </script>
 
     <style>
+        /* === LIGHT THEME (default) === */
         :root {
+            --c-bg: #f4f7fc;
+            --c-bg-surface: #e2eaf6;
+            --c-bg-rgb: 244, 247, 252;
+            --c-cyan: #1a8fb8;
+            --c-purple: #6432c9;
+            --c-magenta: #c42aaf;
+            --c-mint: #18b88a;
+            --c-peach: #d48a3c;
+            --c-light-cyan: #2bb0dc;
+            --c-text: rgba(24, 36, 58, 0.92);
+            --c-text-muted: rgba(68, 88, 120, 0.78);
+            --c-border: rgba(80, 110, 160, 0.18);
+            --c-card-bg: rgba(255, 255, 255, 0.6);
+            --c-card-border: rgba(80, 110, 160, 0.14);
+            --c-card-hover: rgba(26, 143, 184, 0.2);
+            --c-code-bg: rgba(220, 232, 248, 0.6);
+            --c-code-border: rgba(80, 110, 160, 0.15);
+            --c-code-text: #1a6b8a;
+            --c-hero-sub-bg: rgba(244, 247, 252, 0.8);
+            --c-hero-sub-border: rgba(26, 143, 184, 0.3);
+            --c-hero-sub-shadow: rgba(26, 143, 184, 0.15);
+            --c-status-bg: rgba(244, 247, 252, 0.7);
+            --c-hint-bg: rgba(244, 247, 252, 0.6);
+            --c-hint-border: rgba(26, 143, 184, 0.25);
+            --c-label-shadow: 0 1px 6px rgba(244, 247, 252, 0.8), 0 0 2px rgba(244, 247, 252, 0.5);
+            --c-grid-line: rgba(26, 143, 184, 0.06);
+            --c-glow-color: rgba(26, 143, 184, 0.05);
+            --c-btn-primary-hover-shadow: rgba(26, 143, 184, 0.35);
+            --c-btn-secondary-hover-bg: rgba(196, 42, 175, 0.06);
+            --c-nav-hover-bg: rgba(26, 143, 184, 0.06);
+            --c-nav-hover-border: rgba(26, 143, 184, 0.25);
+            --c-footer-copy: rgba(68, 88, 120, 0.4);
+            --c-gradient-accent: linear-gradient(135deg, #1a8fb8, #6432c9, #c42aaf);
+            --c-noise-opacity: 0.03;
+
+            --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
+            --font-sans: 'Outfit', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        /* === DARK THEME === */
+        [data-theme="dark"] {
             --c-bg: #070b17;
             --c-bg-surface: #1f2a4b;
+            --c-bg-rgb: 7, 11, 23;
             --c-cyan: #2fd4ff;
             --c-purple: #7a3bff;
             --c-magenta: #ff2fd9;
@@ -31,10 +75,28 @@
             --c-text: rgba(235, 244, 255, 0.92);
             --c-text-muted: rgba(188, 208, 240, 0.78);
             --c-border: rgba(120, 170, 240, 0.18);
-
-            --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
-            --font-sans: 'Outfit', sans-serif;
-            --font-mono: 'Space Mono', monospace;
+            --c-card-bg: rgba(31, 42, 75, 0.35);
+            --c-card-border: rgba(120, 170, 240, 0.12);
+            --c-card-hover: rgba(47, 212, 255, 0.35);
+            --c-code-bg: rgba(31, 42, 75, 0.5);
+            --c-code-border: rgba(120, 170, 240, 0.15);
+            --c-code-text: #c5f4ff;
+            --c-hero-sub-bg: rgba(7, 11, 23, 0.7);
+            --c-hero-sub-border: rgba(47, 212, 255, 0.25);
+            --c-hero-sub-shadow: rgba(47, 212, 255, 0.3);
+            --c-status-bg: rgba(7, 11, 23, 0.6);
+            --c-hint-bg: rgba(7, 11, 23, 0.5);
+            --c-hint-border: rgba(47, 212, 255, 0.3);
+            --c-label-shadow: 0 2px 8px rgba(7, 11, 23, 0.85), 0 0 3px rgba(7, 11, 23, 0.6);
+            --c-grid-line: rgba(47, 212, 255, 0.04);
+            --c-glow-color: rgba(47, 212, 255, 0.06);
+            --c-btn-primary-hover-shadow: rgba(47, 212, 255, 0.5);
+            --c-btn-secondary-hover-bg: rgba(255, 47, 217, 0.08);
+            --c-nav-hover-bg: rgba(47, 212, 255, 0.05);
+            --c-nav-hover-border: rgba(47, 212, 255, 0.3);
+            --c-footer-copy: rgba(188, 208, 240, 0.4);
+            --c-gradient-accent: linear-gradient(135deg, #2fd4ff, #7a3bff, #ff2fd9);
+            --c-noise-opacity: 0.05;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -74,8 +136,8 @@
             z-index: 1;
             pointer-events: none;
             background-image:
-                linear-gradient(rgba(47, 212, 255, 0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(47, 212, 255, 0.04) 1px, transparent 1px);
+                linear-gradient(var(--c-grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--c-grid-line) 1px, transparent 1px);
             background-size: 60px 60px;
         }
 
@@ -83,7 +145,7 @@
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: radial-gradient(circle 400px at var(--gx, 50%) var(--gy, 50%), rgba(47, 212, 255, 0.06), transparent 70%);
+            background: radial-gradient(circle 400px at var(--gx, 50%) var(--gy, 50%), var(--c-glow-color), transparent 70%);
             z-index: 2;
             pointer-events: none;
             mix-blend-mode: screen;
@@ -94,7 +156,7 @@
             top: 0; left: 0;
             width: 100%; height: 100%;
             z-index: 3;
-            opacity: 0.05;
+            opacity: var(--c-noise-opacity);
             pointer-events: none;
             mix-blend-mode: overlay;
             filter: contrast(150%);
@@ -158,8 +220,8 @@
         }
         .nav-link:hover {
             color: var(--c-cyan);
-            border-color: rgba(47, 212, 255, 0.3);
-            background: rgba(47, 212, 255, 0.05);
+            border-color: var(--c-nav-hover-border);
+            background: var(--c-nav-hover-bg);
         }
 
         /* Hero center content */
@@ -189,7 +251,7 @@
         }
 
         .hero-title .accent {
-            background: linear-gradient(135deg, var(--c-cyan), var(--c-purple), var(--c-magenta));
+            background: var(--c-gradient-accent);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -203,12 +265,12 @@
             color: var(--c-light-cyan);
             opacity: 0;
             animation: fadeUp 2.5s var(--ease-fluid) forwards 0.9s;
-            text-shadow: 0 0 12px rgba(47, 212, 255, 0.3);
+            text-shadow: 0 0 12px var(--c-hero-sub-shadow);
             margin-bottom: 3rem;
             display: inline-block;
             padding: 0.4rem 1rem;
-            border: 1px solid rgba(47, 212, 255, 0.25);
-            background: rgba(7, 11, 23, 0.7);
+            border: 1px solid var(--c-hero-sub-border);
+            background: var(--c-hero-sub-bg);
         }
 
         .hero-cta {
@@ -240,7 +302,7 @@
         }
         .btn-primary:hover {
             background: var(--c-light-cyan);
-            box-shadow: 0 0 24px rgba(47, 212, 255, 0.5);
+            box-shadow: 0 0 24px var(--c-btn-primary-hover-shadow);
             transform: translateY(-2px);
         }
 
@@ -252,7 +314,7 @@
         .btn-secondary:hover {
             border-color: var(--c-magenta);
             color: var(--c-magenta);
-            background: rgba(255, 47, 217, 0.08);
+            background: var(--c-btn-secondary-hover-bg);
         }
 
         /* Status line */
@@ -266,7 +328,7 @@
             color: var(--c-text-muted);
             border-left: 2px solid var(--c-purple);
             padding: 0.8rem 1rem;
-            background: rgba(7, 11, 23, 0.6);
+            background: var(--c-status-bg);
             line-height: 1.7;
         }
         .status-label {
@@ -334,13 +396,13 @@
         }
 
         .feature-card {
-            background: rgba(31, 42, 75, 0.35);
-            border: 1px solid rgba(120, 170, 240, 0.12);
+            background: var(--c-card-bg);
+            border: 1px solid var(--c-card-border);
             padding: 2rem;
             transition: border-color 0.3s ease, transform 0.3s ease;
         }
         .feature-card:hover {
-            border-color: rgba(47, 212, 255, 0.35);
+            border-color: var(--c-card-hover);
             transform: translateY(-2px);
         }
 
@@ -408,16 +470,16 @@
         .step-content code {
             font-family: var(--font-mono);
             font-size: 0.78rem;
-            background: rgba(31, 42, 75, 0.5);
-            border: 1px solid rgba(120, 170, 240, 0.15);
+            background: var(--c-code-bg);
+            border: 1px solid var(--c-code-border);
             padding: 0.15rem 0.5rem;
-            color: var(--c-light-cyan);
+            color: var(--c-code-text);
         }
 
         .step-content a {
             color: var(--c-cyan);
             text-decoration: none;
-            border-bottom: 1px solid rgba(47, 212, 255, 0.3);
+            border-bottom: 1px solid var(--c-hero-sub-border);
             transition: border-color 0.2s;
         }
         .step-content a:hover {
@@ -458,7 +520,7 @@
 
         .footer-copy {
             font-size: 0.75rem;
-            color: rgba(188, 208, 240, 0.4);
+            color: var(--c-footer-copy);
         }
 
         /* Label overlay */
@@ -476,7 +538,7 @@
             font-family: var(--font-mono);
             white-space: nowrap;
             pointer-events: none;
-            text-shadow: 0 2px 8px rgba(7, 11, 23, 0.85), 0 0 3px rgba(7, 11, 23, 0.6);
+            text-shadow: var(--c-label-shadow);
             transition: opacity 0.15s ease;
             will-change: transform, opacity;
         }
@@ -490,15 +552,62 @@
             font-size: 0.58rem;
             letter-spacing: 0.05em;
             color: var(--c-text-muted);
-            border-right: 2px solid rgba(47, 212, 255, 0.3);
+            border-right: 2px solid var(--c-hint-border);
             padding: 0.6rem 1rem;
-            background: rgba(7, 11, 23, 0.5);
+            background: var(--c-hint-bg);
             line-height: 1.7;
             text-align: right;
             opacity: 0.7;
             transition: opacity 0.5s ease;
         }
         .drag-hint.faded { opacity: 0; }
+
+        /* Theme toggle */
+        .theme-toggle {
+            pointer-events: auto;
+            background: var(--c-card-bg);
+            border: 1px solid var(--c-border);
+            color: var(--c-text-muted);
+            width: 36px; height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: color 0.3s ease, border-color 0.3s ease;
+            padding: 0;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        .theme-toggle:hover {
+            color: var(--c-cyan);
+            border-color: var(--c-nav-hover-border);
+        }
+        .theme-toggle .icon-sun,
+        .theme-toggle .icon-moon { display: none; }
+        /* Light mode: show moon icon (to switch to dark) */
+        :root:not([data-theme="dark"]) .theme-toggle .icon-moon { display: inline; }
+        [data-theme="dark"] .theme-toggle .icon-sun { display: inline; }
+
+        /* Smooth transition on theme change */
+        body, .hero-sub, .status, .drag-hint, .feature-card,
+        .step-content code, footer, .layer-grid, .noise-overlay {
+            transition: background 0.4s ease, color 0.4s ease, border-color 0.4s ease,
+                        opacity 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        /* Zen mode: Shift+. hides everything but the graph */
+        body.zen .hero-ui,
+        body.zen .layer-grid,
+        body.zen .layer-glow,
+        body.zen .noise-overlay,
+        body.zen #features,
+        body.zen #install,
+        body.zen footer { display: none !important; }
+        body.zen .hero {
+            height: 100vh;
+            min-height: 100vh;
+        }
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -532,6 +641,10 @@
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#install" class="nav-link">Install</a>
                 <a href="https://github.com/glebis/obsidian-4d-graph-explorer" class="nav-link" target="_blank" rel="noopener">GitHub</a>
+                <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                    <span class="icon-sun">&#9788;</span>
+                    <span class="icon-moon">&#9789;</span>
+                </button>
             </div>
         </header>
 
@@ -725,21 +838,55 @@ function rgbStr(arr, a) {
     return `rgba(${Math.round(arr[0]*255)},${Math.round(arr[1]*255)},${Math.round(arr[2]*255)},${a})`;
 }
 
-const neonLineStops = [[0, hexRgb('#2fd4ff')], [0.5, hexRgb('#7a3bff')], [1, hexRgb('#ff2fd9')]];
-const neonPointStops = [[0, hexRgb('#c5f4ff')], [1, hexRgb('#412b77')]];
+// ==== THEME PALETTES ====
+const THEMES = {
+    light: {
+        bg: 0xf4f7fc,
+        fogDensity: 0.06,
+        lineStops: [[0, hexRgb('#1a8fb8')], [0.5, hexRgb('#6432c9')], [1, hexRgb('#c42aaf')]],
+        pointStops: [[0, hexRgb('#1a6b8a')], [1, hexRgb('#b8a0e0')]],
+        edgeOpacity: 0.2,
+        pointOpacity: 0.85,
+        glow: 0.3,
+        blending: 'Normal',
+        catColors: {
+            project:  hexRgb('#1a8fb8'),
+            person:   hexRgb('#c42aaf'),
+            idea:     hexRgb('#18b88a'),
+            research: hexRgb('#6432c9'),
+            daily:    hexRgb('#d48a3c'),
+            book:     hexRgb('#2273a0'),
+            tool:     hexRgb('#1a9e6f'),
+            place:    hexRgb('#c07030'),
+        },
+    },
+    dark: {
+        bg: 0x070b17,
+        fogDensity: 0.08,
+        lineStops: [[0, hexRgb('#2fd4ff')], [0.5, hexRgb('#7a3bff')], [1, hexRgb('#ff2fd9')]],
+        pointStops: [[0, hexRgb('#c5f4ff')], [1, hexRgb('#412b77')]],
+        edgeOpacity: 0.3,
+        pointOpacity: 0.92,
+        glow: 0.5,
+        blending: 'Additive',
+        catColors: {
+            project:  hexRgb('#2fd4ff'),
+            person:   hexRgb('#ff2fd9'),
+            idea:     hexRgb('#9cffe6'),
+            research: hexRgb('#7a3bff'),
+            daily:    hexRgb('#ffd19c'),
+            book:     hexRgb('#c5f4ff'),
+            tool:     hexRgb('#5ef8b0'),
+            place:    hexRgb('#ffaa5e'),
+        },
+    },
+};
+
+let currentTheme = 'light';
+let activeTheme = THEMES.light;
 
 // ==== DEMO VAULT DATA (~120 nodes) ====
 const CATEGORIES = ['project','person','idea','research','daily','book','tool','place'];
-const CAT_COLORS = {
-    project:  hexRgb('#2fd4ff'),
-    person:   hexRgb('#ff2fd9'),
-    idea:     hexRgb('#9cffe6'),
-    research: hexRgb('#7a3bff'),
-    daily:    hexRgb('#ffd19c'),
-    book:     hexRgb('#c5f4ff'),
-    tool:     hexRgb('#5ef8b0'),
-    place:    hexRgb('#ffaa5e'),
-};
 
 const N = (label, cat) => ({label, cat});
 const DEMO_NODES = [
@@ -894,8 +1041,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x070b17);
-scene.fog = new THREE.FogExp2(0x070b17, 0.08);
+scene.background = new THREE.Color(activeTheme.bg);
+scene.fog = new THREE.FogExp2(activeTheme.bg, activeTheme.fogDensity);
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
 camera.position.set(0, 0, 7);
@@ -947,10 +1094,10 @@ pointGeo.setAttribute('size', new THREE.BufferAttribute(sizeArr, 1));
 pointGeo.setAttribute('intensity', new THREE.BufferAttribute(intensityArr, 1));
 
 const pointMat = new THREE.ShaderMaterial({
-    uniforms: { opacity: {value: 0.92}, glow: {value: 0.5} },
+    uniforms: { opacity: {value: activeTheme.pointOpacity}, glow: {value: activeTheme.glow} },
     transparent: true, depthWrite: false, vertexColors: true,
     vertexShader: VERT, fragmentShader: FRAG,
-    blending: THREE.AdditiveBlending,
+    blending: activeTheme.blending === 'Additive' ? THREE.AdditiveBlending : THREE.NormalBlending,
 });
 const points = new THREE.Points(pointGeo, pointMat);
 points.frustumCulled = false;
@@ -964,7 +1111,7 @@ const edgeGeo = new THREE.BufferGeometry();
 edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgePosArr, 3));
 edgeGeo.setAttribute('color', new THREE.BufferAttribute(edgeColorArr, 3));
 const edgeMat = new THREE.LineBasicMaterial({
-    transparent: true, opacity: 0.3, vertexColors: true, linewidth: 1,
+    transparent: true, opacity: activeTheme.edgeOpacity, vertexColors: true, linewidth: 1,
 });
 const edgeLines = new THREE.LineSegments(edgeGeo, edgeMat);
 edgeLines.frustumCulled = false;
@@ -1052,6 +1199,10 @@ window.addEventListener('keydown', (e) => {
         autoRotate = !autoRotate;
         e.preventDefault();
     }
+    if (e.key === '>' || (e.shiftKey && e.code === 'Period')) {
+        document.body.classList.toggle('zen');
+        e.preventDefault();
+    }
 });
 
 // ==== LABEL SYSTEM (ported from plugin labelSelection.ts) ====
@@ -1130,7 +1281,7 @@ function updateLabels(projected, rotated, wMin, wRange, dMin, dRange) {
         if (j < visible.length) {
             const v = visible[j];
             const node = DEMO_NODES[v.i];
-            const catColor = CAT_COLORS[node.cat];
+            const catColor = activeTheme.catColors[node.cat];
             el.textContent = node.label;
             el.style.display = '';
             el.style.transform = `translate(${v.sx}px, ${v.sy}px) translate(-50%, -100%)`;
@@ -1197,8 +1348,8 @@ function animate(now) {
     for (let i = 0; i < nodeCount; i++) {
         const normW = (rotated[i][3] - wMin) / wRange;
         const depth = (projected[i][2] - dMin) / dRange;
-        const base = CAT_COLORS[DEMO_NODES[i].cat];
-        const theme = gradientColor(depth, neonPointStops);
+        const base = activeTheme.catColors[DEMO_NODES[i].cat];
+        const theme = gradientColor(depth, activeTheme.pointStops);
         const blend = 0.55;
         colorArr[i*3]   = base[0]*(1-blend) + theme[0]*blend;
         colorArr[i*3+1] = base[1]*(1-blend) + theme[1]*blend;
@@ -1216,8 +1367,8 @@ function animate(now) {
         edgePosArr[base+3] = b[0]; edgePosArr[base+4] = b[1]; edgePosArr[base+5] = b[2];
         const normWa = (rotated[ai][3] - wMin) / wRange;
         const normWb = (rotated[bi][3] - wMin) / wRange;
-        const ca = gradientColor(normWa, neonLineStops);
-        const cb = gradientColor(normWb, neonLineStops);
+        const ca = gradientColor(normWa, activeTheme.lineStops);
+        const cb = gradientColor(normWb, activeTheme.lineStops);
         edgeColorArr[base] = ca[0]; edgeColorArr[base+1] = ca[1]; edgeColorArr[base+2] = ca[2];
         edgeColorArr[base+3] = cb[0]; edgeColorArr[base+4] = cb[1]; edgeColorArr[base+5] = cb[2];
     }
@@ -1254,6 +1405,29 @@ document.addEventListener('mousemove', (e) => {
     const yp = (e.clientY / window.innerHeight) * 100;
     glowLayer.style.setProperty('--gx', xp + '%');
     glowLayer.style.setProperty('--gy', yp + '%');
+});
+
+// ==== THEME TOGGLE ====
+function applyTheme(name) {
+    currentTheme = name;
+    activeTheme = THEMES[name];
+    document.documentElement.dataset.theme = name === 'dark' ? 'dark' : '';
+    scene.background.set(activeTheme.bg);
+    scene.fog.color.set(activeTheme.bg);
+    scene.fog.density = activeTheme.fogDensity;
+    pointMat.blending = activeTheme.blending === 'Additive' ? THREE.AdditiveBlending : THREE.NormalBlending;
+    pointMat.uniforms.opacity.value = activeTheme.pointOpacity;
+    pointMat.uniforms.glow.value = activeTheme.glow;
+    pointMat.needsUpdate = true;
+    edgeMat.opacity = activeTheme.edgeOpacity;
+    localStorage.setItem('4d-graph-theme', name);
+}
+
+const savedTheme = localStorage.getItem('4d-graph-theme') || 'light';
+if (savedTheme !== 'light') applyTheme(savedTheme);
+
+document.getElementById('theme-toggle').addEventListener('click', () => {
+    applyTheme(currentTheme === 'light' ? 'dark' : 'light');
 });
 </script>
 
