@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4D Graph Explorer -- Obsidian Plugin</title>
+    <meta name="description" content="Explore your Obsidian knowledge graph in four dimensions with immersive visuals, 4D rotation, and force-directed layouts.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <style>
+        :root {
+            --c-bg: #070b17;
+            --c-bg-surface: #1f2a4b;
+            --c-cyan: #2fd4ff;
+            --c-purple: #7a3bff;
+            --c-magenta: #ff2fd9;
+            --c-mint: #9cffe6;
+            --c-peach: #ffd19c;
+            --c-light-cyan: #c5f4ff;
+            --c-text: rgba(235, 244, 255, 0.92);
+            --c-text-muted: rgba(188, 208, 240, 0.78);
+            --c-border: rgba(120, 170, 240, 0.18);
+
+            --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
+            --font-sans: 'Outfit', sans-serif;
+            --font-mono: 'Space Mono', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--c-bg);
+            font-family: var(--font-sans);
+            color: var(--c-text);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* === HERO SECTION === */
+        .hero {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            min-height: 600px;
+            overflow: hidden;
+        }
+
+        #graph-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 0;
+        }
+
+        .layer-grid {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(47, 212, 255, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(47, 212, 255, 0.04) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+
+        .layer-glow {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle 400px at var(--gx, 50%) var(--gy, 50%), rgba(47, 212, 255, 0.06), transparent 70%);
+            z-index: 2;
+            pointer-events: none;
+            mix-blend-mode: screen;
+        }
+
+        .noise-overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 3;
+            opacity: 0.05;
+            pointer-events: none;
+            mix-blend-mode: overlay;
+            filter: contrast(150%);
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+        }
+
+        .hero-ui {
+            position: relative;
+            z-index: 10;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2.5rem 4rem;
+            pointer-events: none;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--c-border);
+            padding-bottom: 1.5rem;
+        }
+
+        .brand {
+            font-family: var(--font-sans);
+            font-size: 1.3rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            text-transform: uppercase;
+            color: var(--c-text);
+            text-decoration: none;
+            pointer-events: auto;
+            transition: color 0.3s ease;
+        }
+        .brand:hover { color: var(--c-cyan); }
+
+        .brand-dim {
+            color: var(--c-text-muted);
+            font-weight: 300;
+        }
+
+        .nav-links {
+            display: flex; gap: 0.5rem;
+        }
+
+        .nav-link {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            font-weight: 700;
+            color: var(--c-text-muted);
+            pointer-events: auto;
+            transition: color 0.3s ease, border-color 0.3s ease;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border: 1px solid transparent;
+        }
+        .nav-link:hover {
+            color: var(--c-cyan);
+            border-color: rgba(47, 212, 255, 0.3);
+            background: rgba(47, 212, 255, 0.05);
+        }
+
+        /* Hero center content */
+        .hero-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+            pointer-events: none;
+            padding: 0 2rem;
+        }
+
+        .hero-title {
+            font-size: clamp(3rem, 8vw, 7rem);
+            line-height: 0.92;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            animation: fadeUp 2.5s var(--ease-fluid) forwards 0.3s;
+        }
+
+        .hero-title .dim {
+            color: var(--c-text-muted);
+        }
+
+        .hero-title .accent {
+            background: linear-gradient(135deg, var(--c-cyan), var(--c-purple), var(--c-magenta));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-sub {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            color: var(--c-light-cyan);
+            opacity: 0;
+            animation: fadeUp 2.5s var(--ease-fluid) forwards 0.9s;
+            text-shadow: 0 0 12px rgba(47, 212, 255, 0.3);
+            margin-bottom: 3rem;
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            border: 1px solid rgba(47, 212, 255, 0.25);
+            background: rgba(7, 11, 23, 0.7);
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            pointer-events: auto;
+            opacity: 0;
+            animation: fadeUp 2s var(--ease-fluid) forwards 1.4s;
+        }
+
+        .btn {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.9rem 2rem;
+            border: 1px solid transparent;
+            transition: all 0.25s ease;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: var(--c-cyan);
+            color: var(--c-bg);
+            font-weight: 700;
+            border-color: var(--c-cyan);
+        }
+        .btn-primary:hover {
+            background: var(--c-light-cyan);
+            box-shadow: 0 0 24px rgba(47, 212, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--c-text-muted);
+            color: var(--c-text);
+        }
+        .btn-secondary:hover {
+            border-color: var(--c-magenta);
+            color: var(--c-magenta);
+            background: rgba(255, 47, 217, 0.08);
+        }
+
+        /* Status line */
+        .status {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 4rem;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            letter-spacing: 0.05em;
+            color: var(--c-text-muted);
+            border-left: 2px solid var(--c-purple);
+            padding: 0.8rem 1rem;
+            background: rgba(7, 11, 23, 0.6);
+            line-height: 1.7;
+        }
+        .status-label {
+            font-size: 0.58rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            color: var(--c-cyan);
+            display: block;
+            margin-bottom: 0.3rem;
+        }
+
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .scroll-hint .line {
+            width: 1px;
+            height: 50px;
+            background: linear-gradient(to bottom, var(--c-cyan), transparent);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { height: 50px; opacity: 0.4; }
+            50% { height: 25px; opacity: 1; }
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === CONTENT SECTIONS === */
+        .section {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 6rem 2rem;
+        }
+
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: var(--c-cyan);
+            margin-bottom: 1rem;
+            padding-left: 1rem;
+            border-left: 2px solid var(--c-purple);
+        }
+
+        .section-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            margin-bottom: 3rem;
+        }
+
+        /* Features */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: rgba(31, 42, 75, 0.35);
+            border: 1px solid rgba(120, 170, 240, 0.12);
+            padding: 2rem;
+            transition: border-color 0.3s ease, transform 0.3s ease;
+        }
+        .feature-card:hover {
+            border-color: rgba(47, 212, 255, 0.35);
+            transform: translateY(-2px);
+        }
+
+        .feature-icon {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .feature-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+        }
+
+        .feature-card p {
+            font-size: 0.88rem;
+            color: var(--c-text-muted);
+            line-height: 1.6;
+        }
+
+        /* Install */
+        .install-section {
+            border-top: 1px solid var(--c-border);
+        }
+
+        .install-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .step {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .step-num {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--c-bg);
+            background: var(--c-cyan);
+            width: 28px; height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 0.15rem;
+        }
+
+        .step-content h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 0.35rem;
+        }
+
+        .step-content p {
+            font-size: 0.85rem;
+            color: var(--c-text-muted);
+            line-height: 1.6;
+        }
+
+        .step-content code {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            background: rgba(31, 42, 75, 0.5);
+            border: 1px solid rgba(120, 170, 240, 0.15);
+            padding: 0.15rem 0.5rem;
+            color: var(--c-light-cyan);
+        }
+
+        .step-content a {
+            color: var(--c-cyan);
+            text-decoration: none;
+            border-bottom: 1px solid rgba(47, 212, 255, 0.3);
+            transition: border-color 0.2s;
+        }
+        .step-content a:hover {
+            border-color: var(--c-cyan);
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--c-border);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links a {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--c-text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .footer-links a:hover { color: var(--c-cyan); }
+
+        .footer-copy {
+            font-size: 0.75rem;
+            color: rgba(188, 208, 240, 0.4);
+        }
+
+        /* Label overlay */
+        #label-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 4;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .graph-label {
+            position: absolute;
+            font-family: var(--font-mono);
+            white-space: nowrap;
+            pointer-events: none;
+            text-shadow: 0 2px 8px rgba(7, 11, 23, 0.85), 0 0 3px rgba(7, 11, 23, 0.6);
+            transition: opacity 0.15s ease;
+            will-change: transform, opacity;
+        }
+
+        /* Drag hint */
+        .drag-hint {
+            position: absolute;
+            bottom: 2.5rem;
+            right: 4rem;
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            letter-spacing: 0.05em;
+            color: var(--c-text-muted);
+            border-right: 2px solid rgba(47, 212, 255, 0.3);
+            padding: 0.6rem 1rem;
+            background: rgba(7, 11, 23, 0.5);
+            line-height: 1.7;
+            text-align: right;
+            opacity: 0.7;
+            transition: opacity 0.5s ease;
+        }
+        .drag-hint.faded { opacity: 0; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero-ui { padding: 1.5rem; }
+            .status { display: none; }
+            .drag-hint { display: none; }
+            .hero-cta { flex-direction: column; padding: 0 2rem; }
+            .header { padding-bottom: 1rem; }
+            .brand { font-size: 1rem; }
+            .nav-links { gap: 0.25rem; }
+            .nav-link { font-size: 0.65rem; padding: 0.4rem 0.6rem; }
+            .section { padding: 4rem 1.5rem; }
+            .features-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+    <canvas id="graph-canvas"></canvas>
+    <div id="label-layer"></div>
+    <div class="layer-grid"></div>
+    <div class="layer-glow"></div>
+    <div class="noise-overlay"></div>
+
+    <div class="hero-ui">
+        <header class="header">
+            <a href="#" class="brand">4D Graph <span class="brand-dim">Explorer</span></a>
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#install" class="nav-link">Install</a>
+                <a href="https://github.com/glebis/obsidian-4d-graph-explorer" class="nav-link" target="_blank" rel="noopener">GitHub</a>
+            </div>
+        </header>
+
+        <div class="hero-center">
+            <h1 class="hero-title">
+                <span class="dim">Your vault</span><br>
+                in <span class="accent">4D</span>
+            </h1>
+            <p class="hero-sub">Obsidian knowledge graph in four dimensions</p>
+            <div class="hero-cta">
+                <a href="https://github.com/glebis/obsidian-4d-graph-explorer/releases/latest" class="btn btn-primary" target="_blank" rel="noopener">Download v0.1.0</a>
+                <a href="https://github.com/glebis/obsidian-4d-graph-explorer" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
+            </div>
+        </div>
+
+        <div class="status">
+            <span class="status-label">4D_GRAPH_ACTIVE</span>
+            NODES: <span id="node-count">--</span> // EDGES: <span id="edge-count">--</span><br>
+            ROTATION: XW + YZ + ZW
+        </div>
+
+        <div class="drag-hint" id="drag-hint">
+            DRAG to rotate 3D<br>
+            SHIFT+DRAG for 4D<br>
+            SCROLL to zoom
+        </div>
+
+        <div class="scroll-hint">
+            <div class="line"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== FEATURES ==================== -->
+<section class="section" id="features">
+    <p class="section-label">Capabilities</p>
+    <h2 class="section-title">See your notes from a new dimension</h2>
+
+    <div class="features-grid">
+        <div class="feature-card">
+            <span class="feature-icon">&#x2B22;</span>
+            <h3>4D Rotation</h3>
+            <p>Rotate your graph across all six 4D planes (XY, XZ, XW, YZ, YW, ZW). Reveal hidden clusters that flat graphs can't show.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&#x2B53;</span>
+            <h3>Force-Directed Layout</h3>
+            <p>Notes self-organize in 4D space. Connected ideas attract, unrelated ones repel -- the topology emerges naturally.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&#x25C8;</span>
+            <h3>Color Rules</h3>
+            <p>Color nodes by folder, tag, or filename pattern. See your vault's structure at a glance with custom coloring rules.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&#x29C9;</span>
+            <h3>Hyperplane Slicing</h3>
+            <p>Slice through the 4th dimension to isolate cross-sections of your graph. Find connections invisible in 3D.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&#x2B1A;</span>
+            <h3>Five Themes</h3>
+            <p>Neon Wire, Pastel Solid, Heat Depth, Monochrome, and Daylight. Dark and light modes with full UI theming.</p>
+        </div>
+        <div class="feature-card">
+            <span class="feature-icon">&#x2316;</span>
+            <h3>Smart Labels</h3>
+            <p>Depth-aware labels that prioritize important, well-connected notes. Hover to highlight neighborhoods.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== INSTALL ==================== -->
+<section class="section install-section" id="install">
+    <p class="section-label">Installation</p>
+    <h2 class="section-title">Manual install</h2>
+
+    <div class="install-steps">
+        <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-content">
+                <h4>Download the release</h4>
+                <p>Get <code>main.js</code>, <code>manifest.json</code>, and <code>styles.css</code> from the <a href="https://github.com/glebis/obsidian-4d-graph-explorer/releases/latest" target="_blank" rel="noopener">latest release</a>.</p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-content">
+                <h4>Create plugin folder</h4>
+                <p>In your vault, create the folder <code>.obsidian/plugins/obsidian-4d-graph-explorer/</code></p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-content">
+                <h4>Copy files</h4>
+                <p>Place all three downloaded files into the new folder.</p>
+            </div>
+        </div>
+        <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-content">
+                <h4>Enable the plugin</h4>
+                <p>Open Obsidian Settings &rarr; Community plugins &rarr; Enable <strong>4D Graph Explorer</strong>. Then use the command palette: <code>4D Graph: Open explorer</code></p>
+            </div>
+        </div>
+    </div>
+
+    <a href="https://github.com/glebis/obsidian-4d-graph-explorer/releases/latest" class="btn btn-primary download-btn" target="_blank" rel="noopener">Download v0.1.0</a>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<footer>
+    <div class="footer-links">
+        <a href="https://github.com/glebis/obsidian-4d-graph-explorer" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/glebis/obsidian-4d-graph-explorer/releases" target="_blank" rel="noopener">Releases</a>
+        <a href="https://github.com/glebis/obsidian-4d-graph-explorer/issues" target="_blank" rel="noopener">Issues</a>
+    </div>
+    <p class="footer-copy">4D Graph Explorer by Gleb Kalinin</p>
+</footer>
+
+<!-- ==================== 4D GRAPH SCENE ==================== -->
+<script type="module">
+import * as THREE from 'three';
+
+// ==== 4D MATH (ported from plugin math4d.ts) ====
+function identity4() {
+    return Float32Array.from([1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]);
+}
+function multiplyMat4(a, b) {
+    const r = new Float32Array(16);
+    for (let row = 0; row < 4; row++)
+        for (let col = 0; col < 4; col++) {
+            let s = 0;
+            for (let k = 0; k < 4; k++) s += a[row*4+k] * b[k*4+col];
+            r[row*4+col] = s;
+        }
+    return r;
+}
+function rotMat4(angle, axA, axB) {
+    const m = identity4();
+    const c = Math.cos(angle), s = Math.sin(angle);
+    m[axA*4+axA] = c; m[axB*4+axB] = c;
+    m[axA*4+axB] = -s; m[axB*4+axA] = s;
+    return m;
+}
+function applyMat4(v, m) {
+    return [
+        m[0]*v[0]+m[1]*v[1]+m[2]*v[2]+m[3]*v[3],
+        m[4]*v[0]+m[5]*v[1]+m[6]*v[2]+m[7]*v[3],
+        m[8]*v[0]+m[9]*v[1]+m[10]*v[2]+m[11]*v[3],
+        m[12]*v[0]+m[13]*v[1]+m[14]*v[2]+m[15]*v[3],
+    ];
+}
+function composeRotation(angles) {
+    let r = identity4();
+    const planes = [[0,1],[0,2],[0,3],[1,2],[1,3],[2,3]];
+    const keys = ['xy','xz','xw','yz','yw','zw'];
+    for (let i = 0; i < 6; i++) {
+        const a = angles[keys[i]] || 0;
+        if (a !== 0) r = multiplyMat4(rotMat4(a, planes[i][0], planes[i][1]), r);
+    }
+    return r;
+}
+function project4to3(v, wCam, scale) {
+    const d = Math.max(0.05, wCam - v[3]);
+    const f = scale / d;
+    return [v[0]*f, v[1]*f, v[2]*f];
+}
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+// ==== COLOR HELPERS ====
+function lerpC(a, b, t) { return a + (b-a)*t; }
+function hexRgb(hex) {
+    const v = parseInt(hex.replace('#',''), 16);
+    return [(v>>16&0xff)/255, (v>>8&0xff)/255, (v&0xff)/255];
+}
+function gradientColor(t, stops) {
+    t = clamp(t, 0, 1);
+    if (t <= stops[0][0]) return stops[0][1];
+    if (t >= stops[stops.length-1][0]) return stops[stops.length-1][1];
+    for (let i = 0; i < stops.length-1; i++) {
+        if (t >= stops[i][0] && t <= stops[i+1][0]) {
+            const local = (t - stops[i][0]) / (stops[i+1][0] - stops[i][0]);
+            return stops[i][1].map((c,j) => lerpC(c, stops[i+1][1][j], local));
+        }
+    }
+    return stops[0][1];
+}
+function rgbStr(arr, a) {
+    return `rgba(${Math.round(arr[0]*255)},${Math.round(arr[1]*255)},${Math.round(arr[2]*255)},${a})`;
+}
+
+const neonLineStops = [[0, hexRgb('#2fd4ff')], [0.5, hexRgb('#7a3bff')], [1, hexRgb('#ff2fd9')]];
+const neonPointStops = [[0, hexRgb('#c5f4ff')], [1, hexRgb('#412b77')]];
+
+// ==== DEMO VAULT DATA (~120 nodes) ====
+const CATEGORIES = ['project','person','idea','research','daily','book','tool','place'];
+const CAT_COLORS = {
+    project:  hexRgb('#2fd4ff'),
+    person:   hexRgb('#ff2fd9'),
+    idea:     hexRgb('#9cffe6'),
+    research: hexRgb('#7a3bff'),
+    daily:    hexRgb('#ffd19c'),
+    book:     hexRgb('#c5f4ff'),
+    tool:     hexRgb('#5ef8b0'),
+    place:    hexRgb('#ffaa5e'),
+};
+
+const N = (label, cat) => ({label, cat});
+const DEMO_NODES = [
+    // Projects (12)
+    N('Website Redesign','project'), N('ML Pipeline','project'), N('Plugin Development','project'),
+    N('Knowledge Base','project'), N('Home Automation','project'), N('Book Draft','project'),
+    N('API Gateway','project'), N('Design System','project'), N('Mobile App','project'),
+    N('Data Lake','project'), N('CLI Tool','project'), N('Browser Extension','project'),
+    // People (14)
+    N('Alice Chen','person'), N('Bob Martinez','person'), N('Carol Wu','person'),
+    N('David Kim','person'), N('Eva Novak','person'), N('Frank Patel','person'),
+    N('Grace Lee','person'), N('Hassan Ali','person'), N('Iris Zhang','person'),
+    N('Jake Thompson','person'), N('Kira Yamamoto','person'), N('Leo Rossi','person'),
+    N('Maya Johansson','person'), N('Noah Park','person'),
+    // Ideas (16)
+    N('Graph visualization','idea'), N('Spaced repetition','idea'), N('Zettelkasten method','idea'),
+    N('Emergent structure','idea'), N('Digital garden','idea'), N('Linked thinking','idea'),
+    N('Bi-directional links','idea'), N('Atomic notes','idea'), N('Progressive summarization','idea'),
+    N('Evergreen notes','idea'), N('Concept mapping','idea'), N('Knowledge synthesis','idea'),
+    N('Second brain','idea'), N('Serendipity engine','idea'), N('Idea composting','idea'),
+    N('Incremental formalization','idea'),
+    // Research (14)
+    N('Force-directed layouts','research'), N('4D rotation math','research'),
+    N('WebGL shaders','research'), N('Graph theory','research'),
+    N('Quaternion algebra','research'), N('Network topology','research'),
+    N('Dimensionality reduction','research'), N('Clustering algorithms','research'),
+    N('Spectral analysis','research'), N('Hyperbolic geometry','research'),
+    N('Manifold learning','research'), N('Topology optimization','research'),
+    N('Persistent homology','research'), N('Information geometry','research'),
+    // Daily notes (20)
+    N('2026-01-10','daily'), N('2026-01-11','daily'), N('2026-01-12','daily'),
+    N('2026-01-13','daily'), N('2026-01-14','daily'), N('2026-01-15','daily'),
+    N('2026-01-16','daily'), N('2026-01-17','daily'), N('2026-01-18','daily'),
+    N('2026-01-19','daily'), N('2026-01-20','daily'), N('2026-01-21','daily'),
+    N('2026-01-22','daily'), N('2026-01-23','daily'), N('2026-01-24','daily'),
+    N('2026-01-25','daily'), N('2026-01-26','daily'), N('2026-01-27','daily'),
+    N('2026-01-28','daily'), N('2026-01-29','daily'),
+    // Books (12)
+    N('How to Take Smart Notes','book'), N('The Art of Research','book'),
+    N('Graph Algorithms','book'), N('Visual Complexity','book'),
+    N('Thinking in Systems','book'), N('The Design of Everyday Things','book'),
+    N('Godel Escher Bach','book'), N('A Pattern Language','book'),
+    N('The Structure of Scientific Revolutions','book'), N('Metaphors We Live By','book'),
+    N('Where Good Ideas Come From','book'), N('The Book of Why','book'),
+    // Tools (12)
+    N('Obsidian','tool'), N('Dataview','tool'), N('Templater','tool'),
+    N('Git','tool'), N('Three.js','tool'), N('TypeScript','tool'),
+    N('Neovim','tool'), N('Zotero','tool'), N('Excalidraw','tool'),
+    N('Mermaid','tool'), N('D3.js','tool'), N('Pandoc','tool'),
+    // Places (8)
+    N('Berlin','place'), N('Tokyo','place'), N('Library','place'),
+    N('Home Office','place'), N('Coffee Shop','place'), N('University','place'),
+    N('Hackerspace','place'), N('Conference Hall','place'),
+];
+
+// ---- Generate edges ----
+const edgeSet = new Set();
+const DEMO_EDGES = [];
+function addEdge(a, b) {
+    if (a === b || a < 0 || b < 0 || a >= DEMO_NODES.length || b >= DEMO_NODES.length) return;
+    const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+    if (edgeSet.has(key)) return;
+    edgeSet.add(key);
+    DEMO_EDGES.push([a, b]);
+}
+
+const byCat = {};
+DEMO_NODES.forEach((n, i) => { (byCat[n.cat] = byCat[n.cat] || []).push(i); });
+
+// Intra-category chains + skip links
+for (const cat of CATEGORIES) {
+    const ids = byCat[cat] || [];
+    for (let i = 1; i < ids.length; i++) addEdge(ids[i-1], ids[i]);
+    for (let i = 0; i + 2 < ids.length; i++) if (Math.random() < 0.35) addEdge(ids[i], ids[i+2]);
+    if (ids.length > 4) for (let i = 0; i + 3 < ids.length; i++) if (Math.random() < 0.15) addEdge(ids[i], ids[i+3]);
+}
+
+// Dense cross-category links
+const crossLinks = [
+    // projects <-> people
+    [0,12],[0,18],[1,13],[1,14],[2,26],[2,15],[3,28],[3,16],[4,19],[5,76],[6,20],[7,97],
+    [8,21],[9,42],[10,100],[11,101],
+    // projects <-> ideas
+    [0,26],[1,42],[2,26],[3,28],[4,30],[5,36],[6,38],[7,32],[8,34],[9,40],[10,37],[11,39],
+    // projects <-> research
+    [0,44],[1,42],[2,43],[3,46],[4,47],[5,48],[6,49],[7,50],[8,51],[9,55],[10,52],[11,53],
+    // projects <-> tools
+    [0,98],[1,103],[2,99],[3,100],[4,98],[5,109],[6,103],[7,102],[8,104],[9,108],[10,100],[11,105],
+    // ideas <-> research
+    [26,42],[27,43],[28,45],[29,46],[30,44],[31,50],[32,49],[33,51],[34,47],[35,54],[36,52],[37,55],
+    [38,53],[39,48],[40,56],[41,57],
+    // ideas <-> books
+    [26,78],[27,79],[28,76],[29,80],[30,82],[31,77],[32,83],[33,84],[34,81],[35,85],[36,86],[37,87],
+    // books <-> research
+    [76,42],[77,43],[78,44],[79,50],[80,47],[81,54],[82,55],[83,56],[84,57],[85,48],
+    // people <-> places
+    [12,108],[13,109],[14,110],[15,111],[16,112],[17,113],[18,114],[19,115],
+    // tools <-> research
+    [98,43],[99,42],[100,44],[101,50],[102,49],[103,51],[104,46],[105,55],
+    // daily -> scattered
+    [56,0],[57,1],[58,12],[59,26],[60,42],[61,76],[62,98],[63,108],[64,2],[65,13],
+    [66,27],[67,43],[68,77],[69,99],[70,109],[71,3],[72,14],[73,28],[74,44],[75,78],
+    // places <-> projects
+    [108,0],[109,1],[110,2],[111,3],[112,4],[113,5],[114,6],[115,7],
+];
+crossLinks.forEach(([a,b]) => addEdge(a, b));
+
+// Extra random cross links for density
+for (let i = 0; i < 40; i++) {
+    const a = Math.floor(Math.random() * DEMO_NODES.length);
+    const b = Math.floor(Math.random() * DEMO_NODES.length);
+    addEdge(a, b);
+}
+
+// ---- Precompute degrees ----
+const nodeDegrees = new Uint8Array(DEMO_NODES.length);
+DEMO_EDGES.forEach(([a, b]) => { nodeDegrees[a]++; nodeDegrees[b]++; });
+
+// ==== POSITION ON 4D TORUS ====
+const MAJOR_R = 2.4;
+const MINOR_R = 0.9;
+const nodeCount = DEMO_NODES.length;
+const vertices4d = new Array(nodeCount);
+
+for (let i = 0; i < nodeCount; i++) {
+    const node = DEMO_NODES[i];
+    const catIdx = CATEGORIES.indexOf(node.cat);
+    const catIds = byCat[node.cat];
+    const withinIdx = catIds.indexOf(i);
+    const theta = (catIdx / CATEGORIES.length) * Math.PI * 2 + (withinIdx * 0.14);
+    const phi = (withinIdx / catIds.length) * Math.PI * 2;
+    const jitter = 0.2;
+    const jx = (Math.random()-0.5) * jitter;
+    const jy = (Math.random()-0.5) * jitter;
+    const jz = (Math.random()-0.5) * jitter;
+    const jw = (Math.random()-0.5) * jitter;
+    vertices4d[i] = [
+        MAJOR_R * Math.cos(theta) + MINOR_R * Math.cos(phi) * Math.cos(theta) + jx,
+        MAJOR_R * Math.sin(theta) + MINOR_R * Math.cos(phi) * Math.sin(theta) + jy,
+        MINOR_R * Math.sin(phi) + jz,
+        MINOR_R * Math.cos(phi) * 0.7 + jw,
+    ];
+}
+
+// ==== THREE.JS SETUP ====
+const canvas = document.getElementById('graph-canvas');
+const heroEl = document.querySelector('.hero');
+const labelLayer = document.getElementById('label-layer');
+
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x070b17);
+scene.fog = new THREE.FogExp2(0x070b17, 0.08);
+
+const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
+camera.position.set(0, 0, 7);
+scene.add(camera);
+
+// ---- Shaders (from plugin renderer.ts) ----
+const VERT = `
+    attribute float size;
+    attribute float intensity;
+    attribute vec3 hyperColor;
+    varying vec3 vColor;
+    varying float vIntensity;
+    void main() {
+        vColor = hyperColor;
+        vIntensity = intensity;
+        vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+        float attenuation = size * (220.0 / max(0.0001, -mvPosition.z));
+        gl_PointSize = clamp(attenuation, 1.0, 160.0);
+        gl_Position = projectionMatrix * mvPosition;
+    }
+`;
+const FRAG = `
+    varying vec3 vColor;
+    varying float vIntensity;
+    uniform float opacity;
+    uniform float glow;
+    void main() {
+        vec2 coord = gl_PointCoord - vec2(0.5);
+        float dist = length(coord);
+        if (dist > 0.55) discard;
+        float halo = smoothstep(0.55, 0.28, dist);
+        float core = smoothstep(0.32, 0.0, dist);
+        float alpha = clamp(core + halo * glow, 0.0, 1.0) * opacity * clamp(vIntensity, 0.05, 1.35);
+        vec3 tint = mix(vColor * 0.75, vColor, core);
+        gl_FragColor = vec4(tint, alpha);
+    }
+`;
+
+// Points
+const posArr = new Float32Array(nodeCount * 3);
+const colorArr = new Float32Array(nodeCount * 3);
+const sizeArr = new Float32Array(nodeCount);
+const intensityArr = new Float32Array(nodeCount);
+
+const pointGeo = new THREE.BufferGeometry();
+pointGeo.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+pointGeo.setAttribute('hyperColor', new THREE.BufferAttribute(colorArr, 3));
+pointGeo.setAttribute('size', new THREE.BufferAttribute(sizeArr, 1));
+pointGeo.setAttribute('intensity', new THREE.BufferAttribute(intensityArr, 1));
+
+const pointMat = new THREE.ShaderMaterial({
+    uniforms: { opacity: {value: 0.92}, glow: {value: 0.5} },
+    transparent: true, depthWrite: false, vertexColors: true,
+    vertexShader: VERT, fragmentShader: FRAG,
+    blending: THREE.AdditiveBlending,
+});
+const points = new THREE.Points(pointGeo, pointMat);
+points.frustumCulled = false;
+scene.add(points);
+
+// Edges
+const edgeCount = DEMO_EDGES.length;
+const edgePosArr = new Float32Array(edgeCount * 2 * 3);
+const edgeColorArr = new Float32Array(edgeCount * 2 * 3);
+const edgeGeo = new THREE.BufferGeometry();
+edgeGeo.setAttribute('position', new THREE.BufferAttribute(edgePosArr, 3));
+edgeGeo.setAttribute('color', new THREE.BufferAttribute(edgeColorArr, 3));
+const edgeMat = new THREE.LineBasicMaterial({
+    transparent: true, opacity: 0.3, vertexColors: true, linewidth: 1,
+});
+const edgeLines = new THREE.LineSegments(edgeGeo, edgeMat);
+edgeLines.frustumCulled = false;
+scene.add(edgeLines);
+
+// Status
+document.getElementById('node-count').textContent = nodeCount;
+document.getElementById('edge-count').textContent = edgeCount;
+
+// ==== ROTATION STATE (matches plugin controls.ts) ====
+const rotState = { xy: 0, xz: 0, xw: 0, yz: 0, yw: 0, zw: 0 };
+let autoRotate = true;
+let autoTime = 0;
+const autoSpeed = { xw: 0.06, yw: 0.04, zw: 0.025, xy: 0.008, yz: 0.012 };
+
+// Camera zoom
+let cameraZ = 7;
+const ZOOM_MIN = 3, ZOOM_MAX = 16;
+
+// ==== CONTROLS (ported from plugin controls.ts) ====
+let isDragging = false;
+let lastPointer = { x: 0, y: 0 };
+let hasInteracted = false;
+
+canvas.addEventListener('pointerdown', (e) => {
+    isDragging = true;
+    lastPointer = { x: e.clientX, y: e.clientY };
+    canvas.setPointerCapture(e.pointerId);
+    autoRotate = false;
+    if (!hasInteracted) {
+        hasInteracted = true;
+        document.getElementById('drag-hint')?.classList.add('faded');
+    }
+});
+
+window.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    const dx = e.clientX - lastPointer.x;
+    const dy = e.clientY - lastPointer.y;
+    lastPointer = { x: e.clientX, y: e.clientY };
+
+    // Match plugin: base=XY/XZ, shift=XW/YW, alt/meta=ZW/YZ
+    const modifier = e.shiftKey ? 'high' : (e.altKey || e.metaKey) ? 'zw' : 'base';
+    const speed = modifier === 'high' ? 0.0035 : 0.0025;
+
+    if (modifier === 'base') {
+        rotState.xy += dx * speed;
+        rotState.xz += dy * speed;
+    } else if (modifier === 'high') {
+        rotState.xw += dx * speed;
+        rotState.yw += dy * speed;
+    } else {
+        rotState.zw += dx * speed;
+        rotState.yz += dy * speed;
+    }
+});
+
+window.addEventListener('pointerup', () => { isDragging = false; });
+
+// Zoom via scroll (match plugin: ctrl/meta+scroll = zoom)
+canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = -Math.sign(e.deltaY) * 0.5;
+    cameraZ = clamp(cameraZ - delta, ZOOM_MIN, ZOOM_MAX);
+}, { passive: false });
+
+// Keyboard controls (match plugin ROTATION_KEYS)
+window.addEventListener('keydown', (e) => {
+    const active = document.activeElement;
+    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.tagName === 'SELECT')) return;
+    const step = 0.04;
+    const keyMap = {
+        q: ['xw', -1], e: ['xw', 1], w: ['yw', -1], s: ['yw', 1],
+        a: ['zw', -1], d: ['zw', 1],
+        ArrowUp: ['yz', -1], ArrowDown: ['yz', 1],
+        ArrowLeft: ['xy', -1], ArrowRight: ['xy', 1],
+    };
+    if (keyMap[e.key]) {
+        const [plane, dir] = keyMap[e.key];
+        rotState[plane] += step * dir;
+        autoRotate = false;
+        e.preventDefault();
+    }
+    if (e.key === ' ') {
+        autoRotate = !autoRotate;
+        e.preventDefault();
+    }
+});
+
+// ==== LABEL SYSTEM (ported from plugin labelSelection.ts) ====
+const MAX_VISIBLE_LABELS = 35;
+const labelEls = [];
+// Pre-create label DOM elements
+for (let i = 0; i < MAX_VISIBLE_LABELS; i++) {
+    const el = document.createElement('div');
+    el.className = 'graph-label';
+    el.style.display = 'none';
+    labelLayer.appendChild(el);
+    labelEls.push(el);
+}
+
+const W_CAMERA = 3.2;
+const PROJ_SCALE = 1.2;
+const tempVec3 = new THREE.Vector3();
+
+function pickVisibleLabels(candidates) {
+    candidates.sort((a, b) => b.weight - a.weight);
+    const visible = [];
+    for (const cand of candidates) {
+        let overlaps = false;
+        for (const existing of visible) {
+            const dx = cand.sx - existing.sx;
+            const dy = cand.sy - existing.sy;
+            const threshold = (cand.fontSize + existing.fontSize) * 2.8;
+            if (dx * dx + dy * dy < threshold * threshold) {
+                overlaps = true;
+                break;
+            }
+        }
+        if (!overlaps) {
+            visible.push(cand);
+            if (visible.length >= MAX_VISIBLE_LABELS) break;
+        }
+    }
+    return visible;
+}
+
+function updateLabels(projected, rotated, wMin, wRange, dMin, dRange) {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    const halfW = w / 2;
+    const halfH = h / 2;
+
+    // Build candidates with screen positions
+    const candidates = [];
+    for (let i = 0; i < nodeCount; i++) {
+        const p = projected[i];
+        tempVec3.set(p[0], p[1], p[2]);
+        tempVec3.project(camera);
+        const sx = (tempVec3.x * halfW) + halfW;
+        const sy = (-tempVec3.y * halfH) + halfH;
+
+        // Skip if behind camera or off screen
+        if (tempVec3.z > 1 || tempVec3.z < 0) continue;
+        if (sx < -100 || sx > w + 100 || sy < -50 || sy > h + 50) continue;
+
+        const normW = (rotated[i][3] - wMin) / wRange;
+        const depth = (p[2] - dMin) / dRange;
+        const degree = nodeDegrees[i];
+        // Weight: degree + depth bias (front nodes score higher)
+        const weight = degree * 1.5 + (1 - depth) * 3 + normW * 0.5;
+        const fontSize = clamp(8 + degree * 0.8, 8, 15);
+        const opacity = clamp(0.3 + (1 - depth) * 0.7, 0.15, 0.95);
+
+        candidates.push({ i, sx, sy, weight, fontSize, opacity, depth });
+    }
+
+    const visible = pickVisibleLabels(candidates);
+
+    // Update DOM elements
+    for (let j = 0; j < MAX_VISIBLE_LABELS; j++) {
+        const el = labelEls[j];
+        if (j < visible.length) {
+            const v = visible[j];
+            const node = DEMO_NODES[v.i];
+            const catColor = CAT_COLORS[node.cat];
+            el.textContent = node.label;
+            el.style.display = '';
+            el.style.transform = `translate(${v.sx}px, ${v.sy}px) translate(-50%, -100%)`;
+            el.style.fontSize = v.fontSize + 'px';
+            el.style.opacity = v.opacity;
+            el.style.color = rgbStr(catColor, clamp(v.opacity + 0.2, 0.3, 1));
+        } else {
+            el.style.display = 'none';
+        }
+    }
+}
+
+// ==== ANIMATION LOOP ====
+let lastLabelUpdate = 0;
+const LABEL_INTERVAL = 50; // ms between label updates
+
+function animate(now) {
+    requestAnimationFrame(animate);
+
+    // Auto-rotation
+    if (autoRotate) {
+        autoTime += 0.008;
+        rotState.xw += autoSpeed.xw * 0.008;
+        rotState.yw += autoSpeed.yw * 0.008;
+        rotState.zw += autoSpeed.zw * 0.008;
+        rotState.xy += autoSpeed.xy * 0.008;
+        rotState.yz += autoSpeed.yz * 0.008;
+    }
+
+    // Camera zoom interpolation
+    camera.position.z += (cameraZ - camera.position.z) * 0.08;
+    if (autoRotate) {
+        camera.position.x = Math.sin(autoTime * 0.1) * 0.5;
+        camera.position.y = Math.cos(autoTime * 0.07) * 0.3;
+    }
+    camera.lookAt(0, 0, 0);
+
+    // 4D rotation
+    const rotMat = composeRotation(rotState);
+
+    let wMin = Infinity, wMax = -Infinity;
+    const rotated = [];
+    for (let i = 0; i < nodeCount; i++) {
+        const r = applyMat4(vertices4d[i], rotMat);
+        rotated[i] = r;
+        if (r[3] < wMin) wMin = r[3];
+        if (r[3] > wMax) wMax = r[3];
+    }
+    const wRange = wMax - wMin || 1;
+
+    // Project to 3D
+    const projected = [];
+    let dMin = Infinity, dMax = -Infinity;
+    for (let i = 0; i < nodeCount; i++) {
+        const p = project4to3(rotated[i], W_CAMERA, PROJ_SCALE);
+        projected[i] = p;
+        posArr[i*3] = p[0]; posArr[i*3+1] = p[1]; posArr[i*3+2] = p[2];
+        if (p[2] < dMin) dMin = p[2];
+        if (p[2] > dMax) dMax = p[2];
+    }
+    const dRange = dMax - dMin || 1;
+
+    // Color nodes
+    for (let i = 0; i < nodeCount; i++) {
+        const normW = (rotated[i][3] - wMin) / wRange;
+        const depth = (projected[i][2] - dMin) / dRange;
+        const base = CAT_COLORS[DEMO_NODES[i].cat];
+        const theme = gradientColor(depth, neonPointStops);
+        const blend = 0.55;
+        colorArr[i*3]   = base[0]*(1-blend) + theme[0]*blend;
+        colorArr[i*3+1] = base[1]*(1-blend) + theme[1]*blend;
+        colorArr[i*3+2] = base[2]*(1-blend) + theme[2]*blend;
+        sizeArr[i] = 0.1 + nodeDegrees[i] * 0.035;
+        intensityArr[i] = 0.4 + normW * 0.9;
+    }
+
+    // Update edges
+    for (let e = 0; e < edgeCount; e++) {
+        const [ai, bi] = DEMO_EDGES[e];
+        const a = projected[ai], b = projected[bi];
+        const base = e * 6;
+        edgePosArr[base] = a[0]; edgePosArr[base+1] = a[1]; edgePosArr[base+2] = a[2];
+        edgePosArr[base+3] = b[0]; edgePosArr[base+4] = b[1]; edgePosArr[base+5] = b[2];
+        const normWa = (rotated[ai][3] - wMin) / wRange;
+        const normWb = (rotated[bi][3] - wMin) / wRange;
+        const ca = gradientColor(normWa, neonLineStops);
+        const cb = gradientColor(normWb, neonLineStops);
+        edgeColorArr[base] = ca[0]; edgeColorArr[base+1] = ca[1]; edgeColorArr[base+2] = ca[2];
+        edgeColorArr[base+3] = cb[0]; edgeColorArr[base+4] = cb[1]; edgeColorArr[base+5] = cb[2];
+    }
+
+    pointGeo.attributes.position.needsUpdate = true;
+    pointGeo.attributes.hyperColor.needsUpdate = true;
+    pointGeo.attributes.size.needsUpdate = true;
+    pointGeo.attributes.intensity.needsUpdate = true;
+    edgeGeo.attributes.position.needsUpdate = true;
+    edgeGeo.attributes.color.needsUpdate = true;
+
+    renderer.render(scene, camera);
+
+    // Throttled label update
+    if (now - lastLabelUpdate > LABEL_INTERVAL) {
+        updateLabels(projected, rotated, wMin, wRange, dMin, dRange);
+        lastLabelUpdate = now;
+    }
+}
+
+requestAnimationFrame(animate);
+
+// ==== RESIZE ====
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ==== CURSOR GLOW ====
+const glowLayer = document.querySelector('.layer-glow');
+document.addEventListener('mousemove', (e) => {
+    const xp = (e.clientX / window.innerWidth) * 100;
+    const yp = (e.clientY / window.innerHeight) * 100;
+    glowLayer.style.setProperty('--gx', xp + '%');
+    glowLayer.style.setProperty('--gy', yp + '%');
+});
+</script>
+
+</body>
+</html>
