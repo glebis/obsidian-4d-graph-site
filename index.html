@@ -24,12 +24,12 @@
             --c-bg: #f4f7fc;
             --c-bg-surface: #e2eaf6;
             --c-bg-rgb: 244, 247, 252;
-            --c-cyan: #1a8fb8;
-            --c-purple: #6432c9;
-            --c-magenta: #c42aaf;
-            --c-mint: #18b88a;
-            --c-peach: #d48a3c;
-            --c-light-cyan: #2bb0dc;
+            --c-cyan: #0b6a8c;
+            --c-purple: #4a18a6;
+            --c-magenta: #a01888;
+            --c-mint: #0e8a62;
+            --c-peach: #b06820;
+            --c-light-cyan: #0e6e8f;
             --c-text: rgba(24, 36, 58, 0.92);
             --c-text-muted: rgba(68, 88, 120, 0.78);
             --c-border: rgba(80, 110, 160, 0.18);
@@ -45,15 +45,15 @@
             --c-status-bg: rgba(244, 247, 252, 0.7);
             --c-hint-bg: rgba(244, 247, 252, 0.6);
             --c-hint-border: rgba(26, 143, 184, 0.25);
-            --c-label-shadow: 0 1px 6px rgba(244, 247, 252, 0.8), 0 0 2px rgba(244, 247, 252, 0.5);
-            --c-grid-line: rgba(26, 143, 184, 0.06);
+            --c-label-shadow: 0 0 4px rgba(244, 247, 252, 1), 0 0 8px rgba(244, 247, 252, 1), 0 0 12px rgba(244, 247, 252, 0.8);
+            --c-grid-line: rgba(11, 106, 140, 0.08);
             --c-glow-color: rgba(26, 143, 184, 0.05);
             --c-btn-primary-hover-shadow: rgba(26, 143, 184, 0.35);
             --c-btn-secondary-hover-bg: rgba(196, 42, 175, 0.06);
             --c-nav-hover-bg: rgba(26, 143, 184, 0.06);
             --c-nav-hover-border: rgba(26, 143, 184, 0.25);
             --c-footer-copy: rgba(68, 88, 120, 0.4);
-            --c-gradient-accent: linear-gradient(135deg, #1a8fb8, #6432c9, #c42aaf);
+            --c-gradient-accent: linear-gradient(135deg, #0b6a8c, #4a18a6, #a01888);
             --c-noise-opacity: 0.03;
 
             --ease-fluid: cubic-bezier(0.19, 1, 0.22, 1);
@@ -236,7 +236,7 @@
         }
 
         .hero-title {
-            font-size: clamp(3rem, 8vw, 7rem);
+            font-size: clamp(2rem, 5vw, 4.5rem);
             line-height: 0.92;
             font-weight: 900;
             letter-spacing: -0.04em;
@@ -522,6 +522,16 @@
             font-size: 0.75rem;
             color: var(--c-footer-copy);
         }
+        .footer-copy a {
+            color: var(--c-footer-copy);
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .footer-copy a:hover {
+            color: var(--c-cyan);
+            border-bottom-color: var(--c-cyan);
+        }
 
         /* Label overlay */
         #label-layer {
@@ -636,7 +646,7 @@
 
     <div class="hero-ui">
         <header class="header">
-            <a href="#" class="brand">4D Graph <span class="brand-dim">Explorer</span></a>
+            <a href="#" class="brand">Obsidian 4D Graph <span class="brand-dim">Explorer</span></a>
             <div class="nav-links">
                 <a href="#features" class="nav-link">Features</a>
                 <a href="#install" class="nav-link">Install</a>
@@ -651,9 +661,9 @@
         <div class="hero-center">
             <h1 class="hero-title">
                 <span class="dim">Your vault</span><br>
-                in <span class="accent">4D</span>
+                in 4D
             </h1>
-            <p class="hero-sub">Obsidian knowledge graph in four dimensions</p>
+            <p class="hero-sub">Browse through your notes in the hyperspace</p>
             <div class="hero-cta">
                 <a href="https://github.com/glebis/obsidian-4d-graph-explorer/releases/latest" class="btn btn-primary" target="_blank" rel="noopener">Download v0.1.0</a>
                 <a href="https://github.com/glebis/obsidian-4d-graph-explorer" class="btn btn-secondary" target="_blank" rel="noopener">View on GitHub</a>
@@ -763,7 +773,7 @@
         <a href="https://github.com/glebis/obsidian-4d-graph-explorer/releases" target="_blank" rel="noopener">Releases</a>
         <a href="https://github.com/glebis/obsidian-4d-graph-explorer/issues" target="_blank" rel="noopener">Issues</a>
     </div>
-    <p class="footer-copy">4D Graph Explorer by Gleb Kalinin</p>
+    <p class="footer-copy">4D Graph Explorer by <a href="https://github.com/glebis" target="_blank" rel="noopener">Gleb Kalinin</a> &middot; <a href="https://www.linkedin.com/in/glebkalinin/" target="_blank" rel="noopener">LinkedIn</a></p>
 </footer>
 
 <!-- ==================== 4D GRAPH SCENE ==================== -->
@@ -842,22 +852,22 @@ function rgbStr(arr, a) {
 const THEMES = {
     light: {
         bg: 0xf4f7fc,
-        fogDensity: 0.06,
-        lineStops: [[0, hexRgb('#1a8fb8')], [0.5, hexRgb('#6432c9')], [1, hexRgb('#c42aaf')]],
-        pointStops: [[0, hexRgb('#1a6b8a')], [1, hexRgb('#b8a0e0')]],
-        edgeOpacity: 0.2,
-        pointOpacity: 0.85,
-        glow: 0.3,
+        fogDensity: 0.03,
+        lineStops: [[0, hexRgb('#0e6e8f')], [0.5, hexRgb('#4a1aa6')], [1, hexRgb('#9e1a8a')]],
+        pointStops: [[0, hexRgb('#0a4a66')], [1, hexRgb('#6b3daa')]],
+        edgeOpacity: 0.55,
+        pointOpacity: 0.95,
+        glow: 0.15,
         blending: 'Normal',
         catColors: {
-            project:  hexRgb('#1a8fb8'),
-            person:   hexRgb('#c42aaf'),
-            idea:     hexRgb('#18b88a'),
-            research: hexRgb('#6432c9'),
-            daily:    hexRgb('#d48a3c'),
-            book:     hexRgb('#2273a0'),
-            tool:     hexRgb('#1a9e6f'),
-            place:    hexRgb('#c07030'),
+            project:  hexRgb('#0b6a8c'),
+            person:   hexRgb('#a01888'),
+            idea:     hexRgb('#0e8a62'),
+            research: hexRgb('#4a18a6'),
+            daily:    hexRgb('#b06820'),
+            book:     hexRgb('#155a82'),
+            tool:     hexRgb('#0e7a52'),
+            place:    hexRgb('#9a5518'),
         },
     },
     dark: {
